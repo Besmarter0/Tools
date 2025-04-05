@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Text Group Spreader</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Animate.css for extra animations (optional) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+</head>
+<body class="bg-gray-100 text-gray-800 p-6">
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-4 text-center">Text Group Spreader</h1>
+    <div class="mb-4">
+      <textarea id="inputText" placeholder="Paste your lines here" class="w-full h-40 p-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+    </div>
+    <div class="flex items-center space-x-4 mb-4">
+      <div>
+        <label for="groupSize" class="font-medium">Lines per group:</label>
+        <input type="number" id="groupSize" value="7" min="1" class="w-20 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+      <button id="groupButton" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition duration-200">
+        Group Lines
+      </button>
+    </div>
+
+    <!-- Groups container -->
+    <div id="groupsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2 bg-green-500 text-white rounded shadow-lg"></div>
+
+  <script>
+    const inputText = document.getElementById("inputText");
+    const groupSizeInput = document.getElementById("groupSize");
+    const groupButton = document.getElementById("groupButton");
+    const groupsContainer = document.getElementById("groupsContainer");
+    const toast = document.getElementById("toast");
+
+    // Function to show toast notifications
+    function showToast(message, bgColor = "bg-green-500") {
+      toast.textContent = message;
+      toast.className = `fixed bottom-4 right-4 z-50 px-4 py-2 ${bgColor} text-white rounded shadow-lg animate__animated animate__fadeIn`;
+      toast.classList.remove("hidden");
+      setTimeout(() => {
+        toast.className = `fixed bottom-4 right-4 z-50 px-4 py-2 ${bgColor} text-white rounded shadow-lg animate__animated animate__fadeOut`;
+      }, 2000);
+      setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 2500);
+    }
+
+    // Helper function to generate a random hex color that is not white.
+    function getRandomColor() {
+      let color = "#";
+      const letters = "0123456789ABCDEF";
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      // Avoid white (#FFFFFF) or near white shades:
+      if (color.toUpperCase() === "#FFFFFF" || color.toUpperCase() === "#FFFFFE") {
+        return getRandomColor();
+      }
+      return color;
+    }
+
+    // Function to split the text into groups based on the given group size.
+    function groupLines() {
+      const rawText = inputText.value.trim();
+      if (!rawText) {
+        showToast("Please paste some lines first!", "bg-red-500");
+        return;
+      }
+      const lines = rawText.split('\n').filter(line => line.trim() !== '');
+      const groupSize = parseInt(groupSizeInput.value, 10);
+      groupsContainer.innerHTML = ""; // Clear previous groups
+
+      for (let i = 0; i < lines.length; i += groupSize) {
+        const groupLines = lines.slice(i, i + groupSize);
+        const groupDiv = document.createElement("div");
+        groupDiv.className = "group p-4 bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition duration-200 cursor-pointer relative animate__animated animate__fadeInUp";
+        groupDiv.innerHTML = groupLines.join("<br>");
+        groupDiv.dataset.groupNumber = (i / groupSize) + 1;
+
+        // Add click event to copy the group's text to clipboard.
+        groupDiv.addEventListener("click", () => copyGroup(groupDiv));
+        groupsContainer.appendChild(groupDiv);
+      }
+      showToast("Text grouped successfully!");
+    }
+
+    // Function to copy a group's text to clipboard, apply a random background color, and show a toast.
+    async function copyGroup(groupDiv) {
+      const groupContent = groupDiv.innerText;
+      try {
+        await navigator.clipboard.writeText(groupContent);
+        // Assign a random background color (except white) and ensure text remains legible.
+        const randomColor = getRandomColor();
+        groupDiv.style.backgroundColor = randomColor;
+        // Optional: Change text color based on brightness for better legibility.
+        groupDiv.style.color = "#fff";
+        showToast("Copied group " + groupDiv.dataset.groupNumber);
+      } catch (err) {
+        showToast("Failed to copy!", "bg-red-500");
+      }
+    }
+
+    groupButton.addEventListener("click", groupLines);
+  </script>
+</body>
+</html>
